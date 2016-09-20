@@ -1,10 +1,10 @@
 package main
 
 import (
+	"flag"
+	"log"
 	"net"
 	"net/rpc"
-	"log"
-	"flag"
 )
 
 var workerType = flag.String("t", "Fibonacci", "Worker type")
@@ -23,6 +23,10 @@ func main() {
 	rpc.Register(baseWorker)
 
 	switch *workerType {
+	case "BCrypt":
+		rpc.Register(new(BCrypt))
+	case "Arithmetics":
+		rpc.Register(new(Arithmetics))
 	case "ReverseText":
 		rpc.Register(new(ReverseText))
 	default:
@@ -30,7 +34,7 @@ func main() {
 		rpc.Register(new(Fibonacci))
 	}
 
-	conn,err := net.Dial("tcp",":9002")
+	conn, err := net.Dial("tcp", ":9002")
 	if err != nil {
 		log.Fatal(err)
 	}
