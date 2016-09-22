@@ -5,13 +5,13 @@ import (
 	"log"
 )
 
-type ReverseTextJob struct {
+type Job struct {
 	In     interface{}
 	Out    interface{}
 	Result chan error
 }
 
-var reverseTextQueue (chan ReverseTextJob)
+var queue map[string](chan Job)
 var workerReady map[string](chan bool)
 
 type WorkerAddress struct {
@@ -36,28 +36,51 @@ func (c *Control) DisconnectWorker(address WorkerAddress, res *int) error {
 
 func (q *Q) ReverseText(in string, out *string) error {
 	result := make(chan error)
-	job := ReverseTextJob{in, out, result}
-	reverseTextQueue <- job
+	queue["ReverseText"] <- Job{in, out, result}
+	return <-result
+}
+
+func (q *Q) Arithmetics(in string, out *string) error {
+	result := make(chan error)
+	queue["Arithmetics"] <- Job{in, out, result}
+	return <-result
+}
+
+func (q *Q) BCrypt(in string, out *string) error {
+	result := make(chan error)
+	queue["BCrypt"] <- Job{in, out, result}
+	return <-result
+}
+
+func (q *Q) Fibonacci(in string, out *string) error {
+	result := make(chan error)
+	queue["Fibonacci"] <- Job{in, out, result}
 	return <-result
 }
 
 func init() {
 	workerReady = map[string](chan bool){
 		"ReverseText": make(chan bool),
+		"Arithmetics": make(chan bool),
+		"BCrypt":      make(chan bool),
+		"Fibonacci":   make(chan bool),
 	}
-	reverseTextQueue = make(chan ReverseTextJob)
+	queue = map[string](chan Job){}
 
-	go func() {
-		for {
-			select {
-			case job := <-reverseTextQueue:
-				go runJob(job, "ReverseText")
+	for k := range workerReady {
+		queue[k] = make(chan Job)
+		go func(k string) {
+			for {
+				select {
+				case job := <-queue[k]:
+					go runJob(job, k)
+				}
 			}
-		}
-	}()
+		}(k)
+	}
 }
 
-func runJob(job ReverseTextJob, workerType string) {
+func runJob(job Job, workerType string) {
 	worker := selectWorker(workerType)
 
 	log.Printf("Running %s job (%v) on %s", workerType, job.In, worker.Address)
@@ -72,6 +95,7 @@ func runJob(job ReverseTextJob, workerType string) {
 	}
 }
 
+// Selects free worker or waits until one becomes free
 func selectWorker(workerType string) *Worker {
 	for i, worker := range workers[workerType] {
 		if !worker.Busy {
