@@ -1,6 +1,9 @@
 package main
 
-//import "time"
+import (
+	"log"
+	"time"
+)
 
 type ReverseText int
 
@@ -11,6 +14,11 @@ func (w *ReverseText) Run(in string, out *string) error {
 		runes[i], runes[length-1-i] = runes[length-1-i], runes[i]
 	}
 	*out = string(runes)
-    //time.Sleep(time.Second)
+	log.Printf("Input: %s; Output: %s", in, *out)
+
+	if *slow {
+		time.Sleep(time.Second)
+	}
+
 	return nil
 }

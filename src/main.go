@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	rpc.Register(new(Control))
 	rpc.Register(new(Q))
 

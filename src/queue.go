@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"log"
+	"sync"
 )
 
 type Job struct {
@@ -13,6 +14,7 @@ type Job struct {
 
 var queue map[string](chan Job)
 var workerReady map[string](chan bool)
+var busyMutex *sync.Mutex
 
 type WorkerAddress struct {
 	Type, Address string
@@ -23,13 +25,16 @@ type Control int
 
 func (c *Control) DisconnectWorker(address WorkerAddress, res *int) error {
 	if list, ok := workers[address.Type]; ok {
+		busyMutex.Lock()
 		for i, worker := range list {
 			if worker.Address == address.Address {
 				log.Printf("Removing %s worker (%s)\n", address.Type, address.Address)
 				workers[address.Type] = append(list[:i], list[i+1:]...)
+				busyMutex.Unlock()
 				return nil
 			}
 		}
+		busyMutex.Unlock()
 	}
 	return errors.New("Worker not found")
 }
@@ -66,6 +71,7 @@ func init() {
 		"Fibonacci":   make(chan bool),
 	}
 	queue = map[string](chan Job){}
+	busyMutex = &sync.Mutex{}
 
 	for k := range workerReady {
 		queue[k] = make(chan Job)
@@ -80,14 +86,16 @@ func init() {
 	}
 }
 
+// Runs job on free worker
 func runJob(job Job, workerType string) {
 	worker := selectWorker(workerType)
 
 	log.Printf("Running %s job (%v) on %s", workerType, job.In, worker.Address)
 
-	worker.Busy = true
 	job.Result <- worker.Client.Call(workerType+".Run", job.In, job.Out)
+	busyMutex.Lock()
 	worker.Busy = false
+	busyMutex.Unlock()
 
 	select {
 	case workerReady[workerType] <- true:
@@ -97,11 +105,15 @@ func runJob(job Job, workerType string) {
 
 // Selects free worker or waits until one becomes free
 func selectWorker(workerType string) *Worker {
+	busyMutex.Lock()
 	for i, worker := range workers[workerType] {
 		if !worker.Busy {
+			workers[workerType][i].Busy = true
+			busyMutex.Unlock()
 			return &workers[workerType][i]
 		}
 	}
+	busyMutex.Unlock()
 
 	<-workerReady[workerType]
 	return selectWorker(workerType)
