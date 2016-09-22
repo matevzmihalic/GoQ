@@ -5,19 +5,46 @@ import (
 	"log"
 	"net"
 	"net/rpc"
+    "os"
+    "os/signal"
+    "syscall"
 )
 
 var workerType = flag.String("t", "Fibonacci", "Worker type")
+var workerAddress string
 
 type Worker int
 
-func (w *Worker) GetType(empty int, result *string) error {
+func (w *Worker) SetUp(address string, result *string) error {
+	workerAddress = address
 	*result = *workerType
 	return nil
 }
 
+type WorkerAddress struct {
+    Type, Address string
+}
+
+func cleanup() {
+	client, err := rpc.Dial("tcp", ":9001")
+    if err != nil {
+    	log.Fatal(err)
+    }
+
+    var reply int
+	client.Call("Control.DisconnectWorker", WorkerAddress{*workerType, workerAddress}, &reply)
+}
+
 func main() {
 	flag.Parse()
+
+	c := make(chan os.Signal, 1)
+    signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+    go func() {
+        <-c
+        cleanup()
+        os.Exit(1)
+    }()
 
 	baseWorker := new(Worker)
 	rpc.Register(baseWorker)
