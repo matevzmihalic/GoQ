@@ -31,7 +31,7 @@ func randomCall() {
 	var method string
 	var err error
 
-	switch rand.Intn(3) {
+	switch rand.Intn(4) {
 	case 0:
 		method = "ReverseText"
 		in = randStringRunes(10)
@@ -40,7 +40,7 @@ func randomCall() {
 		out = result
 	case 1:
 		method = "Arithmetics"
-		in = fmt.Sprintf("%d%s%d", rand.Intn(9), aritmeticMethods[rand.Intn(3)], rand.Intn(9))
+		in = fmt.Sprintf("%d%s%d", rand.Intn(9), aritmeticMethods[rand.Intn(4)], rand.Intn(9))
 		var result float64
 		err = client.Call("Q."+method, in, &result)
 		out = result

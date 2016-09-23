@@ -1,0 +1,30 @@
+version: '2'
+services:
+  goq:
+    build: .
+    ports:
+     - "9001:9001"
+
+  arithmetics:
+    build: .
+    command: /app/bin/worker -t Arithmetics -a goq_goq_1 -s
+    depends_on:
+     - goq
+
+  bcrypt:
+    build: .
+    command: /app/bin/worker -t BCrypt -a goq_goq_1 -s
+    depends_on:
+     - goq
+
+  fibonacci:
+    build: .
+    command: /app/bin/worker -t Fibonacci -a goq_goq_1 -s
+    depends_on:
+     - goq
+
+  reversetext:
+    build: .
+    command: /app/bin/worker -t ReverseText -a goq_goq_1 -s
+    depends_on:
+     - goq
