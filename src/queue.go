@@ -45,7 +45,7 @@ func (q *Q) ReverseText(in string, out *string) error {
 	return <-result
 }
 
-func (q *Q) Arithmetics(in string, out *string) error {
+func (q *Q) Arithmetics(in string, out *float64) error {
 	result := make(chan error)
 	queue["Arithmetics"] <- Job{in, out, result}
 	return <-result
@@ -57,7 +57,7 @@ func (q *Q) BCrypt(in string, out *string) error {
 	return <-result
 }
 
-func (q *Q) Fibonacci(in string, out *string) error {
+func (q *Q) Fibonacci(in uint, out *uint) error {
 	result := make(chan error)
 	queue["Fibonacci"] <- Job{in, out, result}
 	return <-result
